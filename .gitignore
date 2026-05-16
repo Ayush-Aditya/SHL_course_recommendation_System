@@ -1,0 +1,12 @@
+.env
+.env.*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.eval_output.txt
+eval_output.txt
+evaluation_results.json
+.DS_Store
+.vscode/
