@@ -6,7 +6,6 @@ import json
 import os
 import numpy as np
 from rank_bm25 import BM25Okapi
-from sentence_transformers import SentenceTransformer
 
 # Try to use faiss-cpu
 try:
@@ -40,37 +39,31 @@ class HybridRetriever:
         print(f"Building BM25 index over {len(self.catalog)} items...")
         self.bm25 = BM25Okapi(self.tokenized_docs)
 
-        # Initialize FAISS with sentence-transformers
+        # Initialize FAISS (optional) with precomputed embeddings when available.
+        # Disable by default to fit low-memory deployments; set ENABLE_DENSE_RETRIEVAL=true to enable.
         index_path = os.path.join(os.path.dirname(__file__), "data", "catalog.faiss")
         embeddings_path = os.path.join(os.path.dirname(__file__), "data", "embeddings.npy")
 
-        print("Loading sentence-transformer model...")
-        self.embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        self.embedder = None
 
         self.index = None
         self.embeddings = None
-        if faiss is None:
+        dense_enabled = os.getenv("ENABLE_DENSE_RETRIEVAL", "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+
+        if not dense_enabled:
+            print("Dense retrieval disabled (ENABLE_DENSE_RETRIEVAL=false). Using BM25-only.")
+        elif faiss is None:
             print("WARNING: faiss not available. Falling back to BM25-only retrieval.")
         elif os.path.exists(index_path) and os.path.exists(embeddings_path):
             print("Loading pre-built FAISS index...")
             self.index = faiss.read_index(index_path)
             self.embeddings = np.load(embeddings_path)
         else:
-            print("Building FAISS index (this takes ~30s on first run)...")
-            self.embeddings = self.embedder.encode(
-                self.documents, show_progress_bar=True, normalize_embeddings=True
-            )
-            self.embeddings = self.embeddings.astype("float32")
-
-            # Build FAISS index
-            dim = self.embeddings.shape[1]
-            self.index = faiss.IndexFlatIP(dim)  # Inner product (cosine sim for normalized vectors)
-            self.index.add(self.embeddings)
-
-            # Save for future use
-            faiss.write_index(self.index, index_path)
-            np.save(embeddings_path, self.embeddings)
-            print("FAISS index saved.")
+            print("FAISS embeddings not found. Falling back to BM25-only retrieval.")
 
         print(f"Retriever ready: {len(self.catalog)} items indexed.")
 
@@ -112,9 +105,16 @@ class HybridRetriever:
         """FAISS semantic search. Returns list of (index, score)."""
         if self.index is None:
             return []
-        query_embedding = self.embedder.encode(
-            [query], normalize_embeddings=True
-        ).astype("float32")
+        if self.embedder is None:
+            # Lazy-load only when dense retrieval is actually possible
+            try:
+                from sentence_transformers import SentenceTransformer
+            except ImportError:
+                print("WARNING: sentence-transformers not installed. Dense retrieval disabled.")
+                return []
+            self.embedder = SentenceTransformer("all-MiniLM-L6-v2")
+
+        query_embedding = self.embedder.encode([query], normalize_embeddings=True).astype("float32")
         scores, indices = self.index.search(query_embedding, top_k)
         return [(int(idx), float(score)) for idx, score in zip(indices[0], scores[0]) if idx >= 0]
 

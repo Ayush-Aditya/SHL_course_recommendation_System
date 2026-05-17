@@ -4,7 +4,6 @@ google-genai
 groq
 openai
 faiss-cpu
-sentence-transformers
 pydantic
 python-dotenv
 beautifulsoup4

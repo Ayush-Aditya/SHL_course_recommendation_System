@@ -12,6 +12,8 @@ services:
         sync: false
       - key: LLM_PROVIDER
         value: groq
+      - key: ENABLE_DENSE_RETRIEVAL
+        value: "false"
     healthCheckPath: /health
     buildCommand: ""
     startCommand: ""
