@@ -53,7 +53,7 @@ flowchart LR
 ## End-to-End Request Flow
 
 <p align="center">
-  <img src="content/1st%20%282%29.png" alt="Request Lifecycle Diagram" width="100%" />
+  <img src="content/2nd.png" alt="Request Lifecycle Diagram" width="100%" />
 </p>
 
 1. Client sends full conversation history to POST /chat.
@@ -153,7 +153,7 @@ Generated artifacts:
 - evaluation_results.json
 
 <p align="center">
-  <img src="content/1st%20%283%29.png" alt="Evaluation Dashboard" width="100%" />
+  <img src="content/3rd.png" alt="Evaluation Dashboard" width="100%" />
 </p>
 
 ## Deployment
@@ -188,7 +188,7 @@ Required environment variables:
 ## Roadmap
 
 <p align="center">
-  <img src="content/1st%20%284%29.png" alt="Product Roadmap" width="100%" />
+  <img src="content/4th.png" alt="Product Roadmap" width="100%" />
 </p>
 
 - Domain-level filtering and metadata-aware reranking.
